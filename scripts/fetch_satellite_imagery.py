@@ -158,3 +158,4 @@ def run_satellite_ingestion():
 
 if __name__ == "__main__":
     run_satellite_ingestion()
+
