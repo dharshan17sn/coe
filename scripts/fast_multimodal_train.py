@@ -187,3 +187,4 @@ def train_fast_multimodal():
 
 if __name__ == "__main__":
     train_fast_multimodal()
+

@@ -105,3 +105,4 @@ def demo_vision_inference():
 
 if __name__ == "__main__":
     demo_vision_inference()
+

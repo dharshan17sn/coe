@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyclone Eye — Vision-Based Real-Time Monitoring & Prediction Platform</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background-color: #0b0f19; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .glass { background: rgba(17, 24, 39, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    #map { height: 540px; border-radius: 0.75rem; z-index: 10; }
+    .leaflet-popup-content-wrapper { background: #1e293b; color: #f8fafc; border-radius: 8px; border: 1px solid #334155; }
+    .leaflet-popup-tip { background: #1e293b; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navbar -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <i data-lucide="radar" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg tracking-wide text-white flex items-center gap-2">
+          CYCLONE EYE <span class="text-xs font-mono font-medium bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded">INSAT-3D + AI</span>
+        </h1>
+        <p class="text-xs text-slate-400">North Indian Ocean Real-Time Monitoring & Prediction Platform (Bay of Bengal & Arabian Sea)</p>
+      </div>
+    </div>
+
+    <!-- Active Storm Quick Badge -->
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-xs font-medium text-slate-300">Live Satellite Feed: <span class="text-emerald-400 font-semibold" id="sys-provider">INSAT-3D Online</span></span>
+      </div>
+
+      <!-- Storm Selector Dropdown -->
+      <div class="flex items-center space-x-2">
+        <label for="storm-select" class="text-xs text-slate-400">Cyclone:</label>
+        <select id="storm-select" onchange="onStormSelect(this.value)" class="bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500">
+          <option value="loading">Loading storms...</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="bg-slate-900/60 border-b border-slate-800 px-6 py-2 flex space-x-2 text-sm font-medium">
+    <button onclick="switchTab('map-view')" id="tab-map-view" class="tab-btn px-4 py-1.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-2">
+      <i data-lucide="map" class="w-4 h-4"></i> Live Map & Trajectory
+    </button>
+    <button onclick="switchTab('satellite-view')" id="tab-satellite-view" class="tab-btn px-4 py-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center gap-2">
+      <i data-lucide="satellite" class="w-4 h-4"></i> INSAT Satellite Imagery
+    </button>
+    <button onclick="switchTab('prediction-view')" id="tab-prediction-view" class="tab-btn px-4 py-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center gap-2">
+      <i data-lucide="trending-up" class="w-4 h-4"></i> Multi-Horizon Predictions
+    </button>
+    <button onclick="switchTab('alerts-view')" id="tab-alerts-view" class="tab-btn px-4 py-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center gap-2">
+      <i data-lucide="alert-triangle" class="w-4 h-4"></i> Early Warning Alerts
+    </button>
+    <button onclick="switchTab('benchmarks-view')" id="tab-benchmarks-view" class="tab-btn px-4 py-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center gap-2">
+      <i data-lucide="award" class="w-4 h-4"></i> Model Performance (Review Slides 9-14)
+    </button>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
+
+    <!-- TAB 1: LIVE MAP & TRAJECTORY -->
+    <div id="content-map-view" class="tab-content space-y-6">
+      <!-- Quick Metric KPI Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="glass p-4 rounded-xl">
+          <p class="text-xs uppercase tracking-wider text-slate-400">Current Intensity Class</p>
+          <p id="kpi-class" class="text-xl font-bold text-amber-400 mt-1">Severe Cyclonic Storm</p>
+          <p class="text-xs text-slate-500 mt-1">Official IMD Standard Category</p>
+        </div>
+        <div class="glass p-4 rounded-xl">
+          <p class="text-xs uppercase tracking-wider text-slate-400">Maximum Sustained Wind</p>
+          <div class="flex items-baseline space-x-2 mt-1">
+            <span id="kpi-wind" class="text-2xl font-bold text-white">60</span>
+            <span class="text-xs text-slate-400 font-mono">knots (111 km/h)</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Estimated at storm eyewall</p>
+        </div>
+        <div class="glass p-4 rounded-xl">
+          <p class="text-xs uppercase tracking-wider text-slate-400">Minimum Central Pressure</p>
+          <div class="flex items-baseline space-x-2 mt-1">
+            <span id="kpi-pres" class="text-2xl font-bold text-cyan-400">978</span>
+            <span class="text-xs text-slate-400 font-mono">hPa / mbar</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Holland Gradient Driving Force</p>
+        </div>
+        <div class="glass p-4 rounded-xl">
+          <p class="text-xs uppercase tracking-wider text-slate-400">Distance to Coastline</p>
+          <div class="flex items-baseline space-x-2 mt-1">
+            <span id="kpi-dist" class="text-2xl font-bold text-rose-400">120</span>
+            <span class="text-xs text-slate-400 font-mono">km</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1" id="kpi-subbasin">Bay of Bengal (BB)</p>
+        </div>
+      </div>
+
+      <!-- Map & Sidebar -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Interactive Map (2 cols) -->
+        <div class="lg:col-span-2 glass p-4 rounded-xl flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="navigation" class="w-4 h-4 text-cyan-400"></i>
+              <h2 class="text-sm font-semibold text-white">Interactive Spatiotemporal Track & Uncertainty Cone</h2>
+            </div>
+            <div class="flex items-center space-x-3 text-xs text-slate-400">
+              <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-cyan-400 rounded"></span> Historical Track</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-rose-500 rounded border border-dashed"></span> ML +24h Forecast</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-rose-500/20 rounded-full border border-rose-500"></span> Cone of Uncertainty</span>
+            </div>
+          </div>
+          <div id="map"></div>
+        </div>
+
+        <!-- Sidebar / On-the-fly Multi-Task Inference Simulator -->
+        <div class="glass p-5 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4">
+              <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+              <h3 class="text-sm font-semibold text-white">Live Multi-Task Inference Simulator</h3>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Input custom meteorological conditions or use the current observation to query the trained PyTorch model.</p>
+
+            <form id="prediction-form" onsubmit="runCustomPrediction(event)" class="space-y-3.5">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Central Pressure (hPa)</label>
+                <input type="number" id="input-pres" step="1" min="880" max="1020" value="970" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:ring-1 focus:ring-cyan-500" />
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Latitude (°N)</label>
+                  <input type="number" id="input-lat" step="0.1" value="16.5" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:ring-1 focus:ring-cyan-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Longitude (°E)</label>
+                  <input type="number" id="input-lon" step="0.1" value="86.2" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:ring-1 focus:ring-cyan-500" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Dist to Land (km)</label>
+                  <input type="number" id="input-dist" step="10" value="180" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:ring-1 focus:ring-cyan-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Basin</label>
+                  <select id="input-basin" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:ring-1 focus:ring-cyan-500">
+                    <option value="BB">Bay of Bengal (BB)</option>
+                    <option value="AS">Arabian Sea (AS)</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2 rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/20">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i> Run Real-Time Prediction
+              </button>
+            </form>
+          </div>
+
+          <!-- Inference Result Box -->
+          <div id="prediction-result-box" class="mt-4 p-3.5 bg-slate-800/80 rounded-lg border border-slate-700 text-xs space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Model Predicted Wind:</span>
+              <span id="pred-res-wind" class="font-bold text-cyan-300 text-sm">-- kt</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Class:</span>
+              <span id="pred-res-class" class="font-semibold text-amber-400">--</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Confidence:</span>
+              <span id="pred-res-conf" class="font-mono text-emerald-400">--%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: INSAT SATELLITE IMAGERY -->
+    <div id="content-satellite-view" class="tab-content hidden space-y-6">
+      <div class="glass p-5 rounded-xl">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-base font-semibold text-white flex items-center gap-2">
+              <i data-lucide="satellite" class="w-5 h-5 text-cyan-400"></i> INSAT-3D Satellite Image Feeds
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Direct Level-1C products captured over the Indian subcontinent</p>
+          </div>
+          <button onclick="fetchLatestSatelliteFeed()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Feeds
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="satellite-gallery">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MULTI-HORIZON PREDICTIONS -->
+    <div id="content-prediction-view" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="forecast-cards">
+        <!-- 6h, 12h, 24h cards -->
+      </div>
+      <div class="glass p-5 rounded-xl">
+        <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+          <i data-lucide="line-chart" class="w-4 h-4 text-cyan-400"></i> Intensity Progression Trajectory (Historical vs Model Forecast)
+        </h3>
+        <div class="h-64">
+          <canvas id="intensity-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: EARLY WARNING ALERTS -->
+    <div id="content-alerts-view" class="tab-content hidden space-y-6">
+      <div class="glass p-5 rounded-xl">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-base font-semibold text-white flex items-center gap-2">
+              <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-400"></i> Coastal Early Warning Advisories & Triggers
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Automated warning generation based on wind thresholds and coastal distance</p>
+          </div>
+          <span class="bg-rose-500/20 text-rose-400 border border-rose-500/40 text-xs px-2.5 py-1 rounded font-mono font-medium">1 Active Advisory</span>
+        </div>
+
+        <div class="space-y-4" id="alerts-list">
+          <!-- Dynamic Alert Cards -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: MODEL BENCHMARKS (REPRODUCING SLIDES 9-14) -->
+    <div id="content-benchmarks-view" class="tab-content hidden space-y-6">
+      <div class="glass p-5 rounded-xl">
+        <div class="mb-4 border-b border-slate-800 pb-3">
+          <h2 class="text-base font-semibold text-white flex items-center gap-2">
+            <i data-lucide="clipboard-check" class="w-5 h-5 text-cyan-400"></i> Academic Model Evaluation & Benchmarking
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Zero-leakage holdout evaluation on North Indian Ocean cyclones (Reproducing Slides 9–14 of Review Presentation)</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider font-mono bg-slate-900/40">
+                <th class="py-3 px-4">Architecture</th>
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4">Val RMSE (kt)</th>
+                <th class="py-3 px-4">Test RMSE (kt)</th>
+                <th class="py-3 px-4">Test R² Score</th>
+                <th class="py-3 px-4">Key Findings</th>
+              </tr>
+            </thead>
+            <tbody id="benchmarks-table-body" class="divide-y divide-slate-800">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 bg-slate-900/60 px-6 py-4 text-center text-xs text-slate-500">
+    Vision-Based Identification, Classification, and Prediction of Cyclones Using Satellite Data | Developed for Center for Computer Vision Research (CCVR)
+  </footer>
+
+  <script>
+    let map;
+    let trackLayer;
+    let forecastLayer;
+    let coneLayer;
+    let intensityChart;
+    let currentStormId = "";
+
+    // Initialize Map
+    function initMap() {
+      map = L.map('map').setView([15.0, 85.0], 5);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 18
+      }).addTo(map);
+
+      trackLayer = L.layerGroup().addTo(map);
+      forecastLayer = L.layerGroup().addTo(map);
+      coneLayer = L.layerGroup().addTo(map);
+    }
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-cyan-500/10', 'text-cyan-400', 'border', 'border-cyan-500/30');
+        btn.classList.add('text-slate-400');
+      });
+
+      const activeContent = document.getElementById(`content-${tabId}`);
+      if (activeContent) activeContent.classList.remove('hidden');
+
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-cyan-500/10', 'text-cyan-400', 'border', 'border-cyan-500/30');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'map-view' && map) {
+        setTimeout(() => map.invalidateSize(), 150);
+      }
+      lucide.createIcons();
+    }
+
+    // Fetch Initial Data
+    async function loadInitialData() {
+      initMap();
+      try {
+        // 1. Status
+        const stRes = await fetch('/api/system/status');
+        const st = await stRes.json();
+        document.getElementById('sys-provider').innerText = `${st.satellite_feeds.cached_raw_images} Frames Cached`;
+
+        // 2. Storms list
+        const cRes = await fetch('/api/cyclones?season=2023&limit=25');
+        const cData = await cRes.json();
+        const sel = document.getElementById('storm-select');
+        sel.innerHTML = '';
+
+        cData.cyclones.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.SID;
+          opt.innerText = `${s.STORM_NAME} (${s.SEASON}) - ${s.PEAK_IMD_CLASS}`;
+          sel.appendChild(opt);
+        });
+
+        // Add 2024 recent storms
+        const c24Res = await fetch('/api/cyclones?season=2024&limit=25');
+        const c24Data = await c24Res.json();
+        c24Data.cyclones.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.SID;
+          opt.innerText = `${s.STORM_NAME} (${s.SEASON}) - ${s.PEAK_IMD_CLASS}`;
+          sel.prepend(opt);
+        });
+
+        // Set active storm
+        if (sel.options.length > 0) {
+          currentStormId = sel.options[0].value;
+          sel.value = currentStormId;
+          await loadStormData(currentStormId);
+        }
+
+        // Load benchmarks
+        await loadBenchmarks();
+        // Load satellite images
+        await loadSatelliteGallery();
+        // Load alerts
+        await loadAlerts();
+      } catch (e) {
+        console.error('Error loading initial data:', e);
+      }
+      lucide.createIcons();
+    }
+
+    async function onStormSelect(sid) {
+      currentStormId = sid;
+      await loadStormData(sid);
+    }
+
+    async function loadStormData(sid) {
+      if (!sid || sid === 'loading') return;
+      try {
+        // Track
+        const trkRes = await fetch(`/api/cyclones/${sid}/track`);
+        const trk = await trkRes.json();
+
+        // Predictions
+        const predRes = await fetch(`/api/cyclones/${sid}/predictions`);
+        const pred = await predRes.json();
+
+        renderTrackAndForecast(trk, pred);
+        updateKPIs(pred);
+        renderForecastCards(pred);
+        renderChart(trk, pred);
+      } catch (e) {
+        console.error('Error loading storm data:', e);
+      }
+    }
+
+    function renderTrackAndForecast(trkData, predData) {
+      trackLayer.clearLayers();
+      forecastLayer.clearLayers();
+      coneLayer.clearLayers();
+
+      const latlngs = trkData.track.map(p => [p.lat, p.lon]);
+      if (latlngs.length === 0) return;
+
+      // Draw Historical Polyline
+      const poly = L.polyline(latlngs, { color: '#06b6d4', weight: 3, opacity: 0.85 }).addTo(trackLayer);
+      map.fitBounds(poly.getBounds().pad(0.3));
+
+      // Markers for track points
+      trkData.track.forEach((p, idx) => {
+        const isLatest = idx === trkData.track.length - 1;
+        const radius = isLatest ? 8 : 4;
+        const color = isLatest ? '#f43f5e' : '#06b6d4';
+
+        const marker = L.circleMarker([p.lat, p.lon], {
+          radius: radius,
+          fillColor: color,
+          fillOpacity: 0.9,
+          color: '#ffffff',
+          weight: isLatest ? 2 : 1
+        }).addTo(trackLayer);
+
+        marker.bindPopup(`
+          <div class="text-xs">
+            <p class="font-bold text-cyan-400">${trkData.storm_name}</p>
+            <p class="text-slate-300">Time: ${p.time}</p>
+            <p class="text-slate-300">Wind: <b>${p.wind_kt} kt</b> (${p.wind_kmh || '--'} km/h)</p>
+            <p class="text-slate-300">Pressure: <b>${p.pres_hpa || '--'} hPa</b></p>
+            <p class="text-amber-400 font-semibold">${p.class_name}</p>
+          </div>
+        `);
+      });
+
+      // Draw Forecast Trajectory & Uncertainty Cone
+      const lastPt = latlngs[latlngs.length - 1];
+      const forecastPts = [[lastPt[0], lastPt[1]]];
+
+      predData.multi_horizon_forecasts.forEach(f => {
+        forecastPts.push([f.predicted_lat, f.predicted_lon]);
+
+        // Draw Cone Circle
+        L.circle([f.predicted_lat, f.predicted_lon], {
+          radius: f.cone_radius_km * 1000,
+          color: '#f43f5e',
+          weight: 1,
+          fillColor: '#f43f5e',
+          fillOpacity: 0.12,
+          dashArray: '4, 4'
+        }).addTo(coneLayer);
+
+        // Forecast Marker
+        L.circleMarker([f.predicted_lat, f.predicted_lon], {
+          radius: 6,
+          fillColor: '#f43f5e',
+          color: '#ffffff',
+          weight: 1.5,
+          fillOpacity: 0.9
+        }).addTo(forecastLayer).bindPopup(`
+          <div class="text-xs">
+            <p class="font-bold text-rose-400">+${f.horizon_hours}h ML Forecast</p>
+            <p>Predicted Wind: <b>${f.predicted_wind_kt} kt</b> (${f.predicted_wind_kmh} km/h)</p>
+            <p class="text-amber-400">${f.predicted_class}</p>
+            <p class="text-slate-400">Cone: ±${f.cone_radius_km} km</p>
+          </div>
+        `);
+      });
+
+      L.polyline(forecastPts, { color: '#f43f5e', weight: 2.5, dashArray: '6, 6' }).addTo(forecastLayer);
+    }
+
+    function updateKPIs(pred) {
+      const cur = pred.current_observation;
+      document.getElementById('kpi-class').innerText = cur.imd_class;
+      document.getElementById('kpi-wind').innerText = cur.wind_kt;
+      document.getElementById('kpi-pres').innerText = cur.pres_hpa;
+      document.getElementById('kpi-dist').innerText = cur.dist_land_km || '140';
+
+      // Simulator default fields
+      document.getElementById('input-pres').value = cur.pres_hpa;
+      document.getElementById('input-lat').value = cur.lat;
+      document.getElementById('input-lon').value = cur.lon;
+    }
+
+    function renderForecastCards(pred) {
+      const container = document.getElementById('forecast-cards');
+      container.innerHTML = '';
+      pred.multi_horizon_forecasts.forEach(f => {
+        const card = document.createElement('div');
+        card.className = 'glass p-4 rounded-xl border border-slate-700/60';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded border border-rose-500/30">+${f.horizon_hours} Hours Forecast</span>
+            <span class="text-xs text-slate-400 font-mono">Radius ±${f.cone_radius_km}km</span>
+          </div>
+          <p class="text-xl font-bold text-white mt-2">${f.predicted_wind_kt} <span class="text-xs font-normal text-slate-400">knots (${f.predicted_wind_kmh} km/h)</span></p>
+          <p class="text-xs font-semibold text-amber-400 mt-1">${f.predicted_class}</p>
+          <div class="mt-3 pt-2 border-t border-slate-800 text-xs text-slate-400 flex justify-between">
+            <span>Coordinates:</span>
+            <span class="font-mono text-slate-200">${f.predicted_lat}°N, ${f.predicted_lon}°E</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderChart(trk, pred) {
+      const ctx = document.getElementById('intensity-chart').getContext('2d');
+      if (intensityChart) intensityChart.destroy();
+
+      const labels = trk.track.slice(-8).map(p => p.time.slice(5, 16));
+      const histWinds = trk.track.slice(-8).map(p => p.wind_kt);
+
+      pred.multi_horizon_forecasts.forEach(f => {
+        labels.push(`+${f.horizon_hours}h`);
+      });
+
+      const forecastWinds = new Array(histWinds.length - 1).fill(null);
+      forecastWinds.push(histWinds[histWinds.length - 1]);
+      pred.multi_horizon_forecasts.forEach(f => forecastWinds.push(f.predicted_wind_kt));
+
+      intensityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Historical Wind (kt)',
+              data: histWinds,
+              borderColor: '#06b6d4',
+              backgroundColor: 'rgba(6, 182, 212, 0.1)',
+              tension: 0.3,
+              fill: true,
+            },
+            {
+              label: 'Model Forecast (kt)',
+              data: forecastWinds,
+              borderColor: '#f43f5e',
+              borderDash: [5, 5],
+              tension: 0.3,
+              pointBackgroundColor: '#f43f5e',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+          },
+          plugins: { legend: { labels: { color: '#e2e8f0' } } }
+        }
+      });
+    }
+
+    async function runCustomPrediction(e) {
+      e.preventDefault();
+      const body = {
+        pressure_hpa: parseFloat(document.getElementById('input-pres').value),
+        latitude: parseFloat(document.getElementById('input-lat').value),
+        longitude: parseFloat(document.getElementById('input-lon').value),
+        distance_to_land_km: parseFloat(document.getElementById('input-dist').value),
+        subbasin: document.getElementById('input-basin').value,
+      };
+
+      try {
+        const res = await fetch('/api/predictions/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        document.getElementById('pred-res-wind').innerText = `${data.predicted_wind_speed_kt} kt (${data.predicted_wind_speed_kmh} km/h)`;
+        document.getElementById('pred-res-class').innerText = data.predicted_imd_category;
+        document.getElementById('pred-res-conf').innerText = `${data.confidence_pct}%`;
+      } catch (err) {
+        alert('Prediction error: ' + err);
+      }
+    }
+
+    async function loadSatelliteGallery() {
+      const res = await fetch('/api/cyclones/current/satellite-images');
+      const data = await res.json();
+      const gal = document.getElementById('satellite-gallery');
+      gal.innerHTML = '';
+
+      data.images.forEach(img => {
+        const el = document.createElement('div');
+        el.className = 'glass rounded-xl overflow-hidden border border-slate-700/60';
+        el.innerHTML = `
+          <div class="h-52 bg-black flex items-center justify-center overflow-hidden">
+            <img src="${img.url}" alt="${img.filename}" class="object-cover h-full w-full hover:scale-105 transition duration-300" />
+          </div>
+          <div class="p-4">
+            <p class="text-xs font-mono font-semibold text-cyan-400">${img.channel}</p>
+            <p class="text-xs text-white font-medium truncate mt-0.5">${img.filename}</p>
+            <div class="flex items-center justify-between text-xs text-slate-500 mt-2">
+              <span>${img.type}</span>
+              <span>${img.size_kb} KB</span>
+            </div>
+          </div>
+        `;
+        gal.appendChild(el);
+      });
+    }
+
+    async function loadAlerts() {
+      const res = await fetch('/api/alerts');
+      const data = await res.json();
+      const list = document.getElementById('alerts-list');
+      list.innerHTML = '';
+
+      data.alerts.forEach(a => {
+        const item = document.createElement('div');
+        item.className = 'p-4 rounded-xl border border-rose-500/30 bg-rose-950/20 space-y-2';
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+              <span class="font-bold text-sm text-white">${a.cyclone_name}</span>
+            </div>
+            <span class="text-xs font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30">SEVERITY: ${a.severity}</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">${a.summary}</p>
+          <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800 text-xs">
+            <span class="text-slate-400">Coastal Impact Sectors:</span>
+            ${a.coastal_risk_zones.map(z => `<span class="bg-slate-800 px-2 py-0.5 rounded text-amber-300 border border-slate-700">${z}</span>`).join('')}
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function loadBenchmarks() {
+      const res = await fetch('/api/model/metrics');
+      const data = await res.json();
+      const body = document.getElementById('benchmarks-table-body');
+      body.innerHTML = '';
+
+      data.metrics.forEach(m => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-800/40';
+        row.innerHTML = `
+          <td class="py-3 px-4 font-semibold text-white">${m.Model}</td>
+          <td class="py-3 px-4 text-slate-400">${m.Type}</td>
+          <td class="py-3 px-4 font-mono text-cyan-400">${m['Val RMSE']}</td>
+          <td class="py-3 px-4 font-mono text-rose-400 font-bold">${m['Test RMSE']}</td>
+          <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${m['Test R2']}</td>
+          <td class="py-3 px-4 text-slate-400 text-xs">
+            ${m.Model.includes('Multimodal') ? 'Best multi-task accuracy combining spatial satellite imagery with physical features' : (m.Model.includes('no_pressure') ? 'Demonstrates high error when pressure gradient is missing' : 'Strong predictive baseline')}
+          </td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    // Launch
+    window.addEventListener('DOMContentLoaded', loadInitialData);
+  </script>
+</body>
+</html>
