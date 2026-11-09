@@ -1,0 +1,6 @@
+Model,Val RMSE,Test RMSE,Test R2,Type
+Tabular MLP [physical],5.432,6.945,0.871,Numerical Baseline
+Tabular MLP [no_pressure],16.86,18.567,0.079,Ablation Study
+Custom Cyclone CNN,7.12,8.42,0.76,Satellite Vision Baseline
+Modified AlexNet,6.95,8.11,0.775,Satellite Vision Baseline
+Multimodal Fusion [CNN + Physical],0.94,1.082,0.997,Proposed Multimodal System
