@@ -37,3 +37,4 @@ class TabularMLP(nn.Module):
         wind_pred = self.wind_head(features)
         class_logits = self.class_head(features)
         return wind_pred, class_logits
+
