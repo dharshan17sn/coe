@@ -423,6 +423,7 @@ def run_custom_prediction(req: PredictionRequest):
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.head("/", response_class=HTMLResponse)
 def get_dashboard_html():
     """Serves the complete interactive cyclone monitoring dashboard."""
     html_path = os.path.join(STATIC_DIR, "index.html")
@@ -435,3 +436,4 @@ def get_dashboard_html():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
