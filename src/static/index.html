@@ -298,11 +298,32 @@
     // Initialize Map
     function initMap() {
       map = L.map('map').setView([15.0, 85.0], 5);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
+
+      // 100% Free Public Basemaps (No API Key Required!)
+      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri World Imagery (Satellite)',
         maxZoom: 18
-      }).addTo(map);
+      });
+
+      const oceanLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri Ocean Basemap',
+        maxZoom: 18
+      });
+
+      const darkGrayLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri Dark Canvas',
+        maxZoom: 18
+      });
+
+      // Default to Satellite View
+      satelliteLayer.addTo(map);
+
+      const baseMaps = {
+        "Satellite (High-Res)": satelliteLayer,
+        "Ocean Depth Map": oceanLayer,
+        "Dark Minimalist": darkGrayLayer
+      };
+      L.control.layers(baseMaps).addTo(map);
 
       trackLayer = L.layerGroup().addTo(map);
       forecastLayer = L.layerGroup().addTo(map);
