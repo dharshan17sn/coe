@@ -1,0 +1,26 @@
+[
+  {
+    "product": "INSAT3D_ASIA_IR1",
+    "path": "datasets\\raw\\insat3d\\INSAT3D_ASIA_IR1_20261109_041146.jpg",
+    "filename": "INSAT3D_ASIA_IR1_20261109_041146.jpg",
+    "timestamp": "2026-11-09T04:11:46.956237+00:00",
+    "size_bytes": 736284,
+    "status": "SUCCESS"
+  },
+  {
+    "product": "INSAT3D_ASIA_VIS",
+    "path": "datasets\\raw\\insat3d\\INSAT3D_ASIA_VIS_20261109_041148.jpg",
+    "filename": "INSAT3D_ASIA_VIS_20261109_041148.jpg",
+    "timestamp": "2026-11-09T04:11:48.572263+00:00",
+    "size_bytes": 736867,
+    "status": "SUCCESS"
+  },
+  {
+    "product": "INSAT3D_RAPID_SCAN_IR1",
+    "path": "datasets\\raw\\insat3d\\INSAT3D_RAPID_SCAN_IR1_20261109_041149.jpg",
+    "filename": "INSAT3D_RAPID_SCAN_IR1_20261109_041149.jpg",
+    "timestamp": "2026-11-09T04:11:49.855162+00:00",
+    "size_bytes": 307900,
+    "status": "SUCCESS"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "cyclone_track": {
+    "url": "https://api.imd.gov.in/api/v1/cyclone_track",
+    "status_code": 401,
+    "content_type": "application/json",
+    "reachable": true,
+    "note": "HTTP 401"
+  },
+  "cyclone_wind": {
+    "url": "https://api.imd.gov.in/api/v1/cyclone_wind",
+    "status_code": 401,
+    "content_type": "application/json",
+    "reachable": true,
+    "note": "HTTP 401"
+  },
+  "cyclone_cou": {
+    "url": "https://api.imd.gov.in/api/v1/cyclone_cou",
+    "status_code": 401,
+    "content_type": "application/json",
+    "reachable": true,
+    "note": "HTTP 401"
+  }
+}

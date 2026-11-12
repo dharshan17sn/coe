@@ -78,3 +78,4 @@ class MultimodalEfficientNet(nn.Module):
         wind_pred = self.wind_head(latent)
         class_logits = self.class_head(latent)
         return wind_pred, class_logits
+

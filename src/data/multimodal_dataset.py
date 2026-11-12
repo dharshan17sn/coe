@@ -96,3 +96,4 @@ class MultimodalCycloneDataset(Dataset):
         y_cls = self.y_class[idx]
 
         return img_tensor, tab_tensor, y_wind, y_cls
+
