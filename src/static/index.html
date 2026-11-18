@@ -258,7 +258,11 @@
 
           <button id="btn-toggle-live-mode" onclick="toggleLiveOrReplayMode()" class="px-3.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold flex items-center gap-2 transition shadow-sm cursor-pointer">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="btn-toggle-live-text">Switch to TODAY LIVE (10-Nov-2026)</span>
+            <span id="btn-toggle-live-text">Switch to LIVE Real-Time</span>
+          </button>
+          <button id="btn-refresh-live" onclick="refreshLiveData(this)" title="Fetch latest JTWC/RSMC live feeds and satellite imagery" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm cursor-pointer">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Refresh Live Feeds</span>
           </button>
         </div>
       </div>
@@ -601,12 +605,28 @@
       const sel = document.getElementById('storm-select');
       sel.innerHTML = '';
 
-      // Live Today Option (always available at the top for real-time monitoring)
+      // Check Real-Time Active Cyclone status dynamically
+      let liveActive = null;
+      try {
+        const liveRes = await fetch('/api/live/status');
+        if (liveRes.ok) {
+          liveActive = await liveRes.json();
+        }
+      } catch (e) {
+        console.warn('Could not query live status:', e);
+      }
+
+      const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
       const liveGroup = document.createElement('optgroup');
       liveGroup.label = '🔴 Real-Time Monitoring';
       const liveOpt = document.createElement('option');
-      liveOpt.value = 'LIVE_TODAY';
-      liveOpt.innerText = '🔴 TODAY LIVE (10-Nov-2026) - Calm Ocean Basin';
+      liveOpt.value = 'LIVE_ACTIVE';
+
+      if (liveActive && liveActive.is_active_cyclone) {
+        liveOpt.innerText = `🔴 LIVE ACTIVE CYCLONE: ${liveActive.storm_name} (Real-Time Track)`;
+      } else {
+        liveOpt.innerText = `🔴 Real-Time Basin Monitor (${todayStr}) - Calm Ocean Basin`;
+      }
       liveGroup.appendChild(liveOpt);
       sel.appendChild(liveGroup);
 
@@ -638,10 +658,14 @@
         console.error('Error populating storm selector:', err);
       }
 
-      // Default to MURASU 2026 if available, or first option
-      const murasuOpt = Array.from(sel.options).find(o => o.value === '2026305N12087');
+      // Default to LIVE_ACTIVE if active cyclone exists, else MURASU 2026 or LIVE_ACTIVE
       if (!currentStormId || !Array.from(sel.options).some(o => o.value === currentStormId)) {
-        currentStormId = murasuOpt ? '2026305N12087' : (sel.options[1]?.value || 'LIVE_TODAY');
+        if (liveActive && liveActive.is_active_cyclone) {
+          currentStormId = 'LIVE_ACTIVE';
+        } else {
+          const murasuOpt = Array.from(sel.options).find(o => o.value === '2026305N12087');
+          currentStormId = murasuOpt ? '2026305N12087' : 'LIVE_ACTIVE';
+        }
       }
       sel.value = currentStormId;
     }
@@ -667,24 +691,48 @@
         if (btnPeak) btnPeak.className = 'px-2.5 py-1 rounded font-medium text-slate-400 hover:text-white cursor-pointer transition';
       }
 
-      if (currentStormId && currentStormId !== 'LIVE_TODAY') {
+      if (currentStormId && !currentStormId.startsWith('LIVE')) {
         await loadStormData(currentStormId);
       }
     }
 
     async function toggleLiveOrReplayMode() {
-      if (currentStormId === 'LIVE_TODAY') {
+      const isLive = currentStormId.startsWith('LIVE') || currentStormId === 'LIVE_TODAY' || currentStormId === 'LIVE_ACTIVE';
+      const sel = document.getElementById('storm-select');
+      if (isLive) {
         // Switch to MURASU 2026
-        const sel = document.getElementById('storm-select');
-        sel.value = '2026305N12087';
-        currentStormId = '2026305N12087';
-        await loadStormData(currentStormId);
+        const murasuOpt = Array.from(sel.options).find(o => o.value === '2026305N12087');
+        const targetSid = murasuOpt ? '2026305N12087' : (sel.options[1]?.value || '2026305N12087');
+        sel.value = targetSid;
+        currentStormId = targetSid;
       } else {
-        // Switch to LIVE_TODAY
-        const sel = document.getElementById('storm-select');
-        sel.value = 'LIVE_TODAY';
-        currentStormId = 'LIVE_TODAY';
+        // Switch to LIVE_ACTIVE
+        sel.value = 'LIVE_ACTIVE';
+        currentStormId = 'LIVE_ACTIVE';
+      }
+      await loadStormData(currentStormId);
+    }
+
+    async function refreshLiveData(btn) {
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Refreshing...</span>`;
+      }
+      try {
+        const res = await fetch('/api/live/refresh', { method: 'POST' });
+        const data = await res.json();
+        await populateStormSelector();
         await loadStormData(currentStormId);
+        await loadSatelliteGallery();
+        await loadAlerts();
+      } catch (err) {
+        console.error('Failed to refresh live data:', err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Refresh Live Feeds</span>`;
+          lucide.createIcons();
+        }
       }
     }
 
@@ -696,7 +744,7 @@
     async function loadStormData(sid) {
       if (!sid || sid === 'loading') return;
       try {
-        const isLive = sid === 'LIVE_TODAY';
+        const isLive = sid.startsWith('LIVE') || sid === 'LIVE_TODAY' || sid === 'LIVE_ACTIVE';
         const stageSelector = document.getElementById('forecast-stage-selector');
         const liveBtnText = document.getElementById('btn-toggle-live-text');
         const liveBtn = document.getElementById('btn-toggle-live-mode');
@@ -711,17 +759,24 @@
         const predRes = await fetch(`/api/cyclones/${sid}/predictions?point_mode=${currentPointMode}`);
         const pred = await predRes.json();
 
+        const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
         if (isLive) {
           if (stageSelector) stageSelector.classList.add('hidden');
           if (liveBtnText) liveBtnText.innerText = 'Switch to Cyclone Replay (MURASU 2026)';
           if (liveBtn) {
             liveBtn.className = 'px-3.5 py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-semibold flex items-center gap-2 transition shadow-sm cursor-pointer';
           }
-          if (bannerTitle) bannerTitle.innerText = 'Real-Time Meteorological Observation: LIVE OCEAN BASIN (10-Nov-2026)';
-          if (bannerDesc) bannerDesc.innerText = 'North Indian Ocean is in an inter-storm calm state (15 kt breeze, 1010 hPa). AI models forecast calm conditions for the next 24 hours.';
+          if (pred.is_active_cyclone) {
+            if (bannerTitle) bannerTitle.innerText = `🔴 REAL-TIME ACTIVE CYCLONE TRACKING: ${pred.storm_name}`;
+            if (bannerDesc) bannerDesc.innerText = `${pred.status_summary} Real-time advisories ingested from JTWC & RSMC New Delhi with INSAT-3D satellite verification. Model forecasts multi-horizon cone of uncertainty for the Indian coastline.`;
+          } else {
+            if (bannerTitle) bannerTitle.innerText = `Real-Time Meteorological Observation: LIVE OCEAN BASIN (${todayStr})`;
+            if (bannerDesc) bannerDesc.innerText = 'North Indian Ocean is in an inter-storm calm state. AI models forecast calm conditions for the next 24 hours.';
+          }
         } else {
           if (stageSelector) stageSelector.classList.remove('hidden');
-          if (liveBtnText) liveBtnText.innerText = 'Switch to TODAY LIVE (10-Nov-2026)';
+          if (liveBtnText) liveBtnText.innerText = 'Switch to LIVE Real-Time Cyclone';
           if (liveBtn) {
             liveBtn.className = 'px-3.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold flex items-center gap-2 transition shadow-sm cursor-pointer';
           }

@@ -24,6 +24,7 @@ import torch
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from src.models import TabularMLP, CustomCycloneCNN, ModifiedAlexNet
+from src.data.live_cyclone_tracker import LiveCycloneTracker
 from scripts.test_vision_inference import predict_from_image
 
 app = FastAPI(
@@ -77,6 +78,28 @@ if os.path.exists(TABULAR_MODEL_PATH):
         print("Tabular MLP model loaded successfully.")
     except Exception as e:
         print(f"Error loading Tabular MLP: {e}")
+
+# Live Cyclone Tracker instance & caching
+live_tracker = LiveCycloneTracker(tabular_model=tabular_model, checkpoint=tabular_checkpoint)
+_cached_live_data = None
+_cached_live_time = None
+
+def get_live_tracker_data(force_refresh=False):
+    global _cached_live_data, _cached_live_time, live_tracker
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if live_tracker is None:
+        live_tracker = LiveCycloneTracker(tabular_model=tabular_model, checkpoint=tabular_checkpoint)
+    
+    if force_refresh or _cached_live_data is None or _cached_live_time is None or (now - _cached_live_time).total_seconds() > 180:
+        try:
+            _cached_live_data = live_tracker.get_realtime_cyclone_data()
+            _cached_live_time = now
+        except Exception as e:
+            print(f"[API] Error refreshing live cyclone data: {e}")
+            if _cached_live_data is None:
+                _cached_live_data = live_tracker.fetch_live_ocean_basin()
+                _cached_live_time = now
+    return _cached_live_data
 
 # In-memory alert store
 ACTIVE_ALERTS = [
@@ -188,22 +211,47 @@ def list_cyclones(
 
 @app.get("/api/cyclones/active")
 def get_active_cyclone():
-    """Returns the most recent monitored cyclone for the live dashboard."""
+    """Returns the live active real-time cyclone if tracking, or latest monitored event."""
+    live_data = get_live_tracker_data()
+    if live_data and live_data.get("is_active_cyclone"):
+        obs = live_data["current_observation"]
+        return {
+            "status": "LIVE_ACTIVE_EVENT",
+            "is_realtime": True,
+            "cyclone_id": "LIVE_ACTIVE",
+            "storm_name": live_data["storm_name"],
+            "season": datetime.datetime.now(datetime.timezone.utc).year,
+            "subbasin": live_data.get("subbasin", "BB"),
+            "subbasin_name": live_data.get("subbasin_name", "Bay of Bengal"),
+            "peak_class": obs.get("imd_class", "Cyclonic Storm"),
+            "current_observation": {
+                "time": obs.get("time"),
+                "latitude": obs.get("lat"),
+                "longitude": obs.get("lon"),
+                "wind_speed_kt": obs.get("wind_kt"),
+                "wind_speed_kmh": obs.get("wind_kmh"),
+                "central_pressure_hpa": obs.get("pres_hpa"),
+                "imd_category": obs.get("imd_class"),
+                "distance_to_land_km": obs.get("dist_land_km"),
+            },
+            "source": live_data.get("source", "JTWC / RSMC New Delhi Real-Time"),
+            "warning_number": live_data.get("warning_number", 1)
+        }
+
     if not os.path.exists(CATALOG_CSV):
         raise HTTPException(status_code=404, detail="Storm catalog not found.")
 
     df = pd.read_csv(CATALOG_CSV)
-    # Get most recent named storm with highest observations
     recent = df[(df["SEASON"] >= 2023) & (df["STORM_NAME"] != "NOT_NAMED")].iloc[0]
     sid = recent["SID"]
 
-    # Get latest track point
     tracks_df = pd.read_csv(TRACKS_CSV)
     storm_pts = tracks_df[tracks_df["SID"] == sid].sort_values(by="ISO_TIME")
     latest_pt = storm_pts.iloc[-1].to_dict()
 
     return {
         "status": "MONITORED_EVENT",
+        "is_realtime": False,
         "cyclone_id": sid,
         "storm_name": recent["STORM_NAME"],
         "season": int(recent["SEASON"]),
@@ -224,18 +272,17 @@ def get_active_cyclone():
 
 @app.get("/api/cyclones/{sid}/track")
 def get_cyclone_track(sid: str):
-    """Returns the full historical track points for Leaflet map overlay."""
-    if sid == "LIVE_TODAY":
-        points = [
-            {"time": "2026-11-09 18:00:00 UTC", "lat": 13.0, "lon": 85.0, "wind_kt": 14.0, "wind_kmh": 25.9, "pres_hpa": 1011.0, "class_name": "Low Pressure Area", "dist_land_km": 420.0},
-            {"time": "2026-11-10 00:00:00 UTC", "lat": 13.2, "lon": 85.2, "wind_kt": 15.0, "wind_kmh": 27.8, "pres_hpa": 1010.0, "class_name": "Low Pressure Area", "dist_land_km": 400.0},
-            {"time": "2026-11-10 06:00:00 UTC", "lat": 13.5, "lon": 85.4, "wind_kt": 15.0, "wind_kmh": 27.8, "pres_hpa": 1010.0, "class_name": "Low Pressure Area", "dist_land_km": 380.0},
-        ]
+    """Returns the full historical or live real-time track points for Leaflet map overlay."""
+    if sid.startswith("LIVE") or sid in ["LIVE_TODAY", "LIVE_ACTIVE", "LIVE_05B", "LIVE_OCEAN_BASIN"]:
+        live_data = get_live_tracker_data()
         return {
-            "cyclone_id": "LIVE_TODAY",
-            "storm_name": "LIVE OCEAN MONITOR (10 Nov 2026)",
-            "points_count": len(points),
-            "track": points
+            "cyclone_id": sid,
+            "storm_name": live_data["storm_name"],
+            "is_active_cyclone": live_data.get("is_active_cyclone", False),
+            "points_count": len(live_data["track"]),
+            "track": live_data["track"],
+            "source": live_data.get("source", "Real-Time Tracking"),
+            "status_summary": live_data.get("status_summary", "")
         }
 
     if not os.path.exists(TRACKS_CSV):
@@ -270,64 +317,21 @@ def get_cyclone_predictions(
     sid: str,
     point_mode: str = Query("peak", description="Forecast baseline: 'peak' (peak ocean intensity) or 'latest' (final observation)")
 ):
-    """Generates multi-horizon forecasts (+6h, +12h, +24h) and cone of uncertainty."""
-    if sid == "LIVE_TODAY":
-        forecasts = [
-            {
-                "horizon_hours": 6,
-                "target_time": "10-Nov 12:00 UTC",
-                "predicted_lat": 13.7,
-                "predicted_lon": 85.6,
-                "predicted_wind_kt": 15.0,
-                "predicted_wind_kmh": 27.8,
-                "predicted_class": "Low Pressure Area",
-                "cone_radius_km": 45.0,
-            },
-            {
-                "horizon_hours": 12,
-                "target_time": "10-Nov 18:00 UTC",
-                "predicted_lat": 13.9,
-                "predicted_lon": 85.7,
-                "predicted_wind_kt": 15.5,
-                "predicted_wind_kmh": 28.7,
-                "predicted_class": "Low Pressure Area",
-                "cone_radius_km": 80.0,
-            },
-            {
-                "horizon_hours": 24,
-                "target_time": "11-Nov 06:00 UTC",
-                "predicted_lat": 14.2,
-                "predicted_lon": 85.9,
-                "predicted_wind_kt": 16.0,
-                "predicted_wind_kmh": 29.6,
-                "predicted_class": "Low Pressure Area",
-                "cone_radius_km": 140.0,
-            },
-        ]
+    """Generates multi-horizon forecasts (+6h, +12h, +24h, +36h, +48h) and cone of uncertainty."""
+    if sid.startswith("LIVE") or sid in ["LIVE_TODAY", "LIVE_ACTIVE", "LIVE_05B", "LIVE_OCEAN_BASIN"]:
+        live_data = get_live_tracker_data()
         return {
-            "cyclone_id": "LIVE_TODAY",
-            "storm_name": "LIVE OCEAN BASIN (10 Nov 2026)",
+            "cyclone_id": sid,
+            "storm_name": live_data["storm_name"],
             "is_live_today": True,
+            "is_active_cyclone": live_data.get("is_active_cyclone", False),
             "point_mode": "live",
-            "baseline_index": 2,
-            "status_summary": "Calm Inter-Storm State (No Active Named Cyclone)",
-            "current_observation": {
-                "time": "2026-11-10 06:00:00 UTC",
-                "lat": 13.5,
-                "lon": 85.4,
-                "wind_kt": 15.0,
-                "pres_hpa": 1010.0,
-                "imd_class": "Low Pressure Area",
-                "dist_land_km": 380.0,
-                "subbasin": "BB",
-            },
-            "model_assessment": {
-                "model_wind_kt": 15.0,
-                "model_class": "Low Pressure Area",
-                "confidence_pct": 95.0,
-                "trend": "Stable (No Cyclone Formation)",
-            },
-            "multi_horizon_forecasts": forecasts,
+            "baseline_index": len(live_data["track"]) - 1,
+            "status_summary": live_data["status_summary"],
+            "current_observation": live_data["current_observation"],
+            "model_assessment": live_data["model_assessment"],
+            "multi_horizon_forecasts": live_data["multi_horizon_forecasts"],
+            "source": live_data.get("source", "Real-Time Tracking")
         }
 
     if not os.path.exists(TRACKS_CSV):
@@ -502,8 +506,54 @@ def get_model_metrics():
 
 @app.get("/api/alerts")
 def get_alerts():
-    """Returns active coastal and intensity alerts."""
-    return {"active_alerts_count": len(ACTIVE_ALERTS), "alerts": ACTIVE_ALERTS}
+    """Returns active coastal and intensity alerts, dynamically including live systems."""
+    live_data = get_live_tracker_data()
+    alerts = list(ACTIVE_ALERTS)
+    if live_data and live_data.get("is_active_cyclone"):
+        obs = live_data["current_observation"]
+        fc12 = live_data["multi_horizon_forecasts"][0] if live_data["multi_horizon_forecasts"] else {}
+        active_alert = {
+            "alert_id": f"LIVE-NIO-{live_data.get('warning_number', 1):03d}",
+            "timestamp": obs.get("time"),
+            "severity": "CRITICAL" if obs.get("wind_kt", 0) >= 48 else "HIGH",
+            "cyclone_name": f"{live_data.get('storm_name')} - REAL-TIME ACTIVE",
+            "source": f"JTWC / RSMC New Delhi Advisory + INSAT-3D",
+            "current_wind_kt": obs.get("wind_kt"),
+            "current_wind_kmh": obs.get("wind_kmh"),
+            "predicted_wind_12h_kt": fc12.get("predicted_wind_kt", obs.get("wind_kt")),
+            "predicted_wind_12h_kmh": fc12.get("predicted_wind_kmh", obs.get("wind_kmh")),
+            "coastal_risk_zones": ["Odisha Coast", "North Andhra Coast", "West Bengal Coast"],
+            "summary": f"LIVE BULLETIN: {live_data.get('status_summary')} Observed at {obs.get('lat')}°N, {obs.get('lon')}°E with {obs.get('wind_kt')} kt winds ({obs.get('wind_kmh')} km/h) and central pressure {obs.get('pres_hpa')} hPa."
+        }
+        alerts.insert(0, active_alert)
+    return {"active_alerts_count": len(alerts), "alerts": alerts}
+
+
+@app.post("/api/live/refresh")
+@app.get("/api/live/refresh")
+def refresh_live_data():
+    """Forces immediate real-time fetch from JTWC/RSMC live feeds and updates status."""
+    fresh_data = get_live_tracker_data(force_refresh=True)
+    return {
+        "status": "SUCCESS",
+        "message": "Real-time feeds refreshed successfully",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "live_cyclone": fresh_data
+    }
+
+
+@app.get("/api/live/status")
+def get_live_status():
+    """Returns current real-time tracking metadata."""
+    live_data = get_live_tracker_data()
+    return {
+        "is_active_cyclone": live_data.get("is_active_cyclone", False),
+        "storm_name": live_data.get("storm_name"),
+        "cyclone_id": live_data.get("cyclone_id"),
+        "timestamp": live_data.get("current_observation", {}).get("time"),
+        "source": live_data.get("source"),
+        "status_summary": live_data.get("status_summary"),
+    }
 
 
 class PredictionRequest(BaseModel):
