@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IEEE Paper Preview — Vision-Based Identification, Classification, and Prediction of Cyclones Using Satellite Data</title>
+  
+  <!-- KaTeX for exact LaTeX math rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* IEEE Conference Paper CSS Specification */
+    @page {
+      size: letter;
+      margin: 0.75in 0.75in 1.0in 0.75in;
+    }
+    
+    body {
+      background-color: #2b2f3a;
+      margin: 0;
+      padding: 0;
+      font-family: 'Times New Roman', Times, serif;
+      color: #000;
+    }
+
+    /* Floating Toolbar */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #111827;
+      color: #f3f4f6;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .btn-primary { background: #0284c7; color: white; border-color: #0369a1; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-secondary { background: #374151; color: #e5e7eb; border-color: #4b5563; }
+    .btn-secondary:hover { background: #4b5563; }
+
+    /* Paper Page Container */
+    .paper-viewport {
+      padding: 24px 0 60px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .paper-sheet {
+      background: #ffffff;
+      width: 8.5in;
+      min-height: 11in;
+      padding: 0.75in 0.75in 1.0in 0.75in;
+      box-sizing: border-box;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      font-size: 10pt;
+      line-height: 1.25;
+      text-align: justify;
+    }
+
+    /* IEEE Header Formatting */
+    .paper-title {
+      font-size: 20pt;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+    .paper-subtitle {
+      font-size: 9pt;
+      text-align: center;
+      font-style: italic;
+      color: #333;
+      margin-bottom: 18px;
+    }
+
+    .author-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px 16px;
+      text-align: center;
+      font-size: 8.5pt;
+      margin-bottom: 22px;
+    }
+    .author-name {
+      font-size: 10pt;
+      font-weight: bold;
+    }
+    .author-affil {
+      font-style: italic;
+    }
+    .author-email {
+      font-family: 'Courier New', monospace;
+      font-size: 7.5pt;
+      color: #003366;
+    }
+
+    /* Two-Column Section */
+    .columns {
+      column-count: 2;
+      column-gap: 0.25in;
+      column-rule: 0.5px solid transparent;
+    }
+
+    /* Section Headings */
+    h2.ieee-sec {
+      font-size: 10pt;
+      text-align: center;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 14px 0 6px 0;
+      letter-spacing: 0.5px;
+      break-after: avoid;
+    }
+    h3.ieee-subsec {
+      font-size: 9.5pt;
+      font-style: italic;
+      font-weight: bold;
+      margin: 10px 0 4px 0;
+      break-after: avoid;
+    }
+
+    p {
+      text-indent: 1.2em;
+      margin: 0 0 5px 0;
+    }
+    p.no-indent {
+      text-indent: 0;
+    }
+
+    .abstract-box {
+      font-size: 9pt;
+      font-weight: bold;
+      margin-bottom: 12px;
+      text-align: justify;
+    }
+    .abstract-box span.lbl {
+      font-style: italic;
+    }
+    .keywords-box {
+      font-size: 9pt;
+      font-weight: bold;
+      margin-bottom: 14px;
+    }
+    .keywords-box span.lbl {
+      font-style: italic;
+    }
+
+    /* Equations */
+    .equation {
+      text-align: center;
+      margin: 8px 0;
+      font-size: 9.5pt;
+    }
+
+    /* Figures & Tables */
+    .figure-box {
+      margin: 10px 0 14px 0;
+      text-align: center;
+      break-inside: avoid;
+    }
+    .figure-box img {
+      width: 100%;
+      height: auto;
+      border: 0.5px solid #e2e8f0;
+      border-radius: 2px;
+    }
+    .caption {
+      font-size: 8pt;
+      text-align: justify;
+      margin-top: 4px;
+      line-height: 1.2;
+    }
+    .caption span.fig-lbl {
+      font-weight: bold;
+    }
+
+    /* Full width element spanning 2 columns */
+    .span-2-col {
+      column-span: all;
+      margin: 12px 0;
+    }
+
+    /* Tables */
+    table.ieee-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.5pt;
+      margin: 8px 0;
+      text-align: center;
+    }
+    table.ieee-table th {
+      border-top: 1.5px solid #000;
+      border-bottom: 1px solid #000;
+      padding: 3px 2px;
+      font-weight: bold;
+    }
+    table.ieee-table td {
+      padding: 3px 2px;
+      border-bottom: 0.5px solid #ddd;
+    }
+    table.ieee-table tr.last-row td {
+      border-bottom: 1.5px solid #000;
+    }
+    .table-caption {
+      font-size: 8pt;
+      text-align: center;
+      text-transform: uppercase;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    /* References */
+    ol.references {
+      padding-left: 18px;
+      margin: 0;
+      font-size: 7.8pt;
+      line-height: 1.22;
+    }
+    ol.references li {
+      margin-bottom: 4px;
+      text-align: justify;
+    }
+
+    /* Print styles */
+    @media print {
+      body { background: white; }
+      .toolbar { display: none; }
+      .paper-viewport { padding: 0; gap: 0; }
+      .paper-sheet {
+        box-shadow: none;
+        width: 100%;
+        min-height: auto;
+        padding: 0;
+        page-break-after: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Navigation Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-title">
+      <i data-lucide="file-text" style="color: #38bdf8;"></i>
+      <span>IEEE Conference Paper Preview (6-Page Limit &middot; Official CCVR / RVCE Authors)</span>
+    </div>
+    <div class="toolbar-actions">
+      <a href="/" class="btn btn-secondary">
+        <i data-lucide="arrow-left"></i> Dashboard
+      </a>
+      <a href="/paper-files/main.tex" download="cyclone_paper.tex" class="btn btn-secondary">
+        <i data-lucide="code"></i> Download LaTeX (.tex)
+      </a>
+      <button onclick="window.print()" class="btn btn-primary">
+        <i data-lucide="printer"></i> Print / Save as PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="paper-viewport">
+    
+    <!-- SHEET 1: Page 1 & 2 -->
+    <div class="paper-sheet">
+      <!-- Title -->
+      <div class="paper-title">
+        Vision-Based Identification, Classification, and Prediction of Cyclones Using Satellite Data
+      </div>
+      <div class="paper-subtitle">
+        Center for Computer Vision Research (CCVR), RV College of Engineering, Bengaluru, India
+      </div>
+
+      <!-- Authors -->
+      <div class="author-grid">
+        <div>
+          <div class="author-name">Dharshan S N</div>
+          <div class="author-affil">Dept. of Information Science &amp; Engg.</div>
+          <div class="author-affil">RV College of Engineering</div>
+          <div class="author-affil">Bengaluru, India</div>
+          <div class="author-email">dharshansn.is23@rvce.edu.in</div>
+        </div>
+        <div>
+          <div class="author-name">Bharath Kumar M S</div>
+          <div class="author-affil">Dept. of Information Science &amp; Engg.</div>
+          <div class="author-affil">RV College of Engineering</div>
+          <div class="author-affil">Bengaluru, India</div>
+          <div class="author-email">bharathkumarm.is23@rvce.edu.in</div>
+        </div>
+        <div>
+          <div class="author-name">Swamy B S</div>
+          <div class="author-affil">Dept. of Information Science &amp; Engg.</div>
+          <div class="author-affil">RV College of Engineering</div>
+          <div class="author-affil">Bengaluru, India</div>
+          <div class="author-email">swamybs.is23@rvce.edu.in</div>
+        </div>
+        <div>
+          <div class="author-name">Manish N</div>
+          <div class="author-affil">Dept. of Information Science &amp; Engg.</div>
+          <div class="author-affil">RV College of Engineering</div>
+          <div class="author-affil">Bengaluru, India</div>
+          <div class="author-email">manishn.is23@rvce.edu.in</div>
+        </div>
+        <div>
+          <div class="author-name">Bobbiti Karthik Reddy</div>
+          <div class="author-affil">Dept. of Information Science &amp; Engg.</div>
+          <div class="author-affil">RV College of Engineering</div>
+          <div class="author-affil">Bengaluru, India</div>
+          <div class="author-email">bobbitikarthikreddy.is23@rvce.edu.in</div>
+        </div>
+        <div>
+          <div class="author-name">Prof. Dr. Azra Nasreen</div>
+          <div class="author-affil">Dept. of Computer Science &amp; Engg.</div>
+          <div class="author-affil">RV College of Engineering</div>
+          <div class="author-affil">Bengaluru, India</div>
+          <div class="author-email">azranasreen@rvce.edu.in</div>
+        </div>
+      </div>
+
+      <!-- Main Body Columns -->
+      <div class="columns">
+        <div class="abstract-box">
+          <span class="lbl">Abstract</span>—Tropical cyclones originating in the North Indian Ocean basin (Bay of Bengal and Arabian Sea) present catastrophic socioeconomic risks to coastal communities through extreme eyewall winds, torrential rainfall, and coastal storm surges. Traditional meteorological estimation predominantly depends on the empirical Dvorak technique, which relies on subjective human interpretation of cloud patterns and introduces operational latency during rapid intensification phases. In this paper, we propose an automated, data-driven, vision-based and multimodal deep learning framework for cyclone identification, continuous maximum sustained wind speed estimation, 8-tier India Meteorological Department (IMD) intensity classification, and multi-horizon (+6h, +12h, and +24h) spatiotemporal forecasting. Our methodology ingests multi-spectral geostationary radiometer imagery from INSAT-3D/3DR (Thermal Infrared 10.8 &mu;m and Visible 0.65 &mu;m) coupled with 44 years of NOAA IBTrACS historical observations (1980&ndash;2024, comprising 15,654 observations across 474 unique storms). We evaluate four complementary neural architectures: a 4-stage Custom Cyclone CNN, a fine-tuned Modified AlexNet, a Physics-Informed Tabular Multi-Layer Perceptron (MLP), and a Multimodal EfficientNet-B0 fusion network combining visual feature embeddings with physical barometric gradients. Experimental evaluation on an unseen holdout benchmark (2023&ndash;2026 storms including Cyclones Biparjoy, Mocha, Michaung, Remal, and Dana) demonstrates that the physics-informed model achieves a state-of-the-art test Root Mean Squared Error (RMSE) of 3.36 kt ($R^2 = 0.855$), while multimodal fusion attains 4.105 kt ($R^2 = 0.783$). Ablation experiments definitively confirm the Holland pressure gradient law: removing central barometric pressure causes prediction error to surge to 18.74 kt ($R^2 = -0.079$), establishing the critical necessity of physics-augmented vision systems for real-time disaster early-warning preparedness.
+        </div>
+
+        <div class="keywords-box">
+          <span class="lbl">Index Terms</span>—Tropical Cyclones, INSAT-3D Satellite Imagery, Computer Vision, Deep Learning, Multimodal Fusion, Dvorak Technique, IMD Intensity Scale, North Indian Ocean.
+        </div>
+
+        <h2 class="ieee-sec">I. Introduction</h2>
+        <p>Tropical cyclones represent among the most destructive atmospheric hazards on Earth. The North Indian Ocean (NIO) basin, encompassing the Bay of Bengal (BoB) and the Arabian Sea (AS), accounts for approximately 7% of global cyclone activity but suffers disproportionately catastrophic humanitarian and economic casualties due to dense coastal populations and shallow coastal bathymetry that magnifies severe tidal surges [1]. In recent years, climate-induced sea surface warming has accelerated both cyclone intensity and the frequency of rapid intensification (RI) events, in which wind speeds escalate by more than 30 knots within 24 hours [8].</p>
+        
+        <p>For more than half a century, operational intensity assessment in satellite meteorology has depended on the subjective Dvorak technique [1]. This empirical rule-based framework relates visible and infrared cloud signatures&mdash;such as convective band curvature, central dense overcast (CDO) symmetry, and eyewall brightness temperature gradients&mdash;to qualitative T-numbers (T1.0 to T8.0). Despite its foundational role, the Dvorak method exhibits three acute operational limitations: (i) inter-analyst subjectivity, frequently producing operational discrepancies exceeding $\pm 15$\,kt [6]; (ii) observational latency during non-linear rapid intensification phases; and (iii) decoupling from numerical thermodynamic drivers, including ambient barometric pressure and coastal proximity [7].</p>
+
+        <p>To overcome these barriers, this work presents a unified, real-time, vision-based and multimodal deep learning framework developed at the Center for Computer Vision Research (CCVR). Ingesting high-resolution geostationary observations from ISRO INSAT-3D/3DR payloads along with 44 years of verified storm tracks from NOAA’s International Best Track Archive for Climate Stewardship (IBTrACS) [2], our framework executes multi-task inference. Specifically, it concurrently estimates continuous maximum sustained wind speed (knots), classifies the storm into the official 8-tier India Meteorological Department (IMD) intensity scale, and projects multi-horizon trajectory cones (+6h, +12h, and +24h).</p>
+
+        <h2 class="ieee-sec">II. Literature Review</h2>
+        <p>Early breakthroughs in data-driven cyclone analysis demonstrated the viability of deep convolutional neural networks (CNNs) for replacing manual Dvorak analysis. Pradhan et al. [1] designed a deep CNN trained on Atlantic and Pacific satellite imagery, proving that convolutional kernels automatically identify eyewall curvature and convection symmetry without hand-crafted heuristics. Chen et al. [3] demonstrated that rotated satellite image cropping enhances CNN generalization across diverse cyclone orientations. Lee et al. [5] leveraged multi-dimensional CNNs across geostationary datasets to estimate cyclone intensities in East Asia. Maskey et al. [6] deployed ``DeepTI'', an operational deep-learning estimation tool, demonstrating superior operational consistency compared to subjective manual estimates.</p>
+
+        <p>To capture the temporal evolution of intensity, recurrent neural networks (RNNs) and Long Short-Term Memory (LSTM) models were introduced. Pan et al. [2] utilized an RNN framework to capture temporal patterns from successive cyclone tracks, demonstrating that time-series dependencies significantly improve forward intensity projection. Yuan et al. [7] formulated tropical cyclone prediction as a fine-grained spatiotemporal problem, highlighting that pure feedforward image models struggle to represent storm momentum without temporal sequence context. Recently, Manju et al. [13] explored ConvLSTM architectures over the North Indian Ocean basin, establishing the necessity of combined spatial and temporal modeling for regional cyclogenesis.</p>
+
+        <p>Despite these advancements, research specifically centered on the North Indian Ocean using ISRO INSAT-3D/3DR payloads has emerged only recently. Dharpure et al. [4] conducted a comparative evaluation of CNN, RNN, and hybrid CNN-RNN models on INSAT-3D thermal infrared imagery, concluding that spatiotemporal fusion yields the lowest estimation error. Suresh and Vijayakumar [11] investigated deep convolutional architectures on INSAT-3D products, emphasizing the importance of rapid cloud-top feature enhancement. Uma Reddy et al. [12] demonstrated INSAT-3D deep learning classification and integrated visualization interfaces.</p>
+
+        <div class="figure-box">
+          <img src="/paper-files/figures/framework.png" alt="Framework Architecture" onerror="this.src='figures/framework.png'">
+          <div class="caption">
+            <span class="fig-lbl">Fig. 1.</span> Overall architectural pipeline of the proposed Vision-Based Cyclone Monitoring, Classification, and Multi-Horizon Prediction System.
+          </div>
+        </div>
+
+        <h2 class="ieee-sec">III. Dataset Acquisition and Preprocessing</h2>
+        <h3 class="ieee-subsec">A. Meteorological Track Data (NOAA IBTrACS v04)</h3>
+        <p>Ground-truth cyclone parameters are extracted from the NOAA IBTrACS v04r01 dataset [2], filtered strictly to the North Indian Ocean basin. We extract all records corresponding to the Bay of Bengal (subbasin code <code>BB</code>) and the Arabian Sea (subbasin code <code>AS</code>) from 1980 through 2024. For each observation, the record contains the timestamp (ISO UTC), eye coordinates ($\text{Lat } \phi, \text{ Lon } \lambda$), maximum sustained wind speed $V_{\text{max}}$ (knots), minimum central barometric pressure $P_c$ (hPa), distance to coastline $D_{\text{land}}$ (km), and operational agency classifications from RSMC New Delhi (IMD) and JTWC. The consolidated dataset comprises 15,654 observations spanning 474 individual tropical cyclones.</p>
+
+        <h3 class="ieee-subsec">B. Official IMD Cyclone Intensity Scale</h3>
+        <p>In accordance with IMD operational standards, each storm observation is mapped into one of eight discrete intensity tiers based on maximum sustained surface wind speed ($V_{\text{max}}$ in knots, where $1\text{ kt} = 1.852\text{ km/h}$):</p>
+        <p>1) <em>Low Pressure Area (LPA):</em> $V_{\text{max}} < 17$ kt ($< 31$ km/h).</p>
+        <p>2) <em>Depression (D):</em> $17 \le V_{\text{max}} \le 27$ kt ($31&ndash;49$ km/h).</p>
+        <p>3) <em>Deep Depression (DD):</em> $28 \le V_{\text{max}} \le 33$ kt ($50&ndash;61$ km/h).</p>
+        <p>4) <em>Cyclonic Storm (CS):</em> $34 \le V_{\text{max}} \le 47$ kt ($62&ndash;88$ km/h). Official naming threshold.</p>
+        <p>5) <em>Severe Cyclonic Storm (SCS):</em> $48 \le V_{\text{max}} \le 63$ kt ($89&ndash;117$ km/h).</p>
+        <p>6) <em>Very Severe Cyclonic Storm (VSCS):</em> $64 \le V_{\text{max}} \le 89$ kt ($118&ndash;166$ km/h). Clear eye visible on satellite.</p>
+        <p>7) <em>Extremely Severe Cyclonic Storm (ESCS):</em> $90 \le V_{\text{max}} \le 119$ kt ($167&ndash;221$ km/h).</p>
+        <p>8) <em>Super Cyclonic Storm (SuCS):</em> $V_{\text{max}} \ge 120$ kt ($\ge 222$ km/h). Cat 5 cataclysm.</p>
+
+        <div class="figure-box">
+          <img src="/paper-files/figures/imd_distribution.png" alt="IMD Distribution" onerror="this.src='figures/imd_distribution.png'">
+          <div class="caption">
+            <span class="fig-lbl">Fig. 2.</span> Log-scaled frequency distribution of 15,654 historical cyclone observations across the 8 official IMD intensity classes (1980&ndash;2024).
+          </div>
+        </div>
+
+        <h3 class="ieee-subsec">C. INSAT-3D/3DR Satellite Data Processing</h3>
+        <p>Satellite imagery is acquired from ISRO SAC MOSDAC and IMD. The data streams include the 10.8 &mu;m Thermal Infrared (IR1) channel for cloud-top temperature measurement, the 0.65 &mu;m Visible channel, and 4.5-minute Rapid Scan products during severe cyclones. Full-disk frames are dynamically center-cropped to a $600 \times 600$\,km bounding box centered on the cyclone vortex $(\phi, \lambda)$, contrast-enhanced, resized via Lanczos interpolation to $224 \times 224 \times 3$, and normalized with ImageNet statistics.</p>
+
+        <div class="figure-box">
+          <img src="/paper-files/figures/satellite_samples.png" alt="Satellite Crops" onerror="this.src='figures/satellite_samples.png'">
+          <div class="caption">
+            <span class="fig-lbl">Fig. 3.</span> (a) Raw full-disk INSAT-3D IR1 frame, and (b)&ndash;(d) preprocessed $224 \times 224$ storm-centered crops over the Bay of Bengal and Arabian Sea.
+          </div>
+        </div>
+
+        <h3 class="ieee-subsec">D. Zero-Leakage Chronological Splits</h3>
+        <p>To eliminate artificial inflated metrics caused by temporal auto-correlation between sequential 3-hourly observations of the same storm, we enforce a strict storm-wise chronological partition: (i) Training Set (1980&ndash;2019): 12,429 records across 379 unique cyclones; (ii) Validation Set (2020&ndash;2022): 995 records across 34 unique cyclones; and (iii) Test Holdout Set (2023&ndash;2026): 1,241 records across 41 completely unseen recent cyclones (including Biparjoy, Mocha, Michaung, Remal, and Dana). Exact storm overlap between splits is strictly zero ($\text{Overlap} = 0$).</p>
+
+        <h2 class="ieee-sec">IV. Methodology and Model Architectures</h2>
+        <h3 class="ieee-subsec">A. Physical Wind-Pressure Formulation</h3>
+        <p>Tropical cyclone dynamics are fundamentally driven by the horizontal barometric pressure gradient between ambient pressure $P_n \approx 1010$\,hPa and cyclone core pressure $P_c$. The maximum gradient wind velocity $V_{\text{max}}$ is governed by the Holland vortex law:</p>
+        <div class="equation">
+          $$V_{\text{max}} = \sqrt{\frac{B}{\rho e} (P_n - P_c)}$$
+        </div>
+        <p class="no-indent">where $B$ is the Holland shape parameter ($1.0 \le B \le 2.5$), $\rho$ is air density ($1.15$\,kg/m$^3$), and $e$ is Euler's number.</p>
+
+        <h3 class="ieee-subsec">B. Custom Cyclone CNN Architecture</h3>
+        <p>The Custom CNN comprises four sequential convolutional blocks. Each block features a $3 \times 3$ Conv2D layer, Batch Normalization, ReLU activation, and a $2 \times 2$ MaxPool2D layer (32 &rarr; 64 &rarr; 128 &rarr; 256 filters). Adaptive Average Pooling yields a $256 \times 4 \times 4 = 4096$-dimensional feature vector, which is projected through a dense layer with Dropout ($p = 0.3$) into a 64-dimensional latent embedding $\mathbf{z}_{\text{vision}}$ before branching into continuous wind regression and 8-class IMD softmax heads.</p>
+
+        <h3 class="ieee-subsec">C. Modified AlexNet Architecture</h3>
+        <p>As a comparative deep vision baseline, we adapt the AlexNet backbone for satellite imagery. The convolutional feature extractor is retained, while the 1000-class classifier is replaced by: $\text{Linear}(9216 \to 512) \to \text{ReLU} \to \text{Dropout}(0.4) \to \text{Linear}(512 \to 128) \to \text{ReLU} \to \text{Dropout}(0.3)$, feeding dual multi-task heads.</p>
+
+        <h3 class="ieee-subsec">D. Physics-Informed Tabular MLP</h3>
+        <p>The numerical baseline ingests a 5-dimensional atmospheric physics vector: $\mathbf{x}_{\text{phy}} = [P_c, \phi, \lambda, D_{\text{land}}, \text{Subbasin}]^T$. Three dense layers ($128 \to 64 \to 32$) with GELU activations, Batch Normalization, and Dropout ($p = 0.15$) feed multi-task linear and cross-entropy outputs.</p>
+
+        <h3 class="ieee-subsec">E. Multimodal EfficientNet-B0 Fusion</h3>
+        <p>The multimodal architecture unifies visual features with ambient thermodynamics. An EfficientNet-B0 visual branch extracts a 64-dimensional visual embedding $\mathbf{v}$, while a tabular branch maps $\mathbf{x}_{\text{phy}}$ to a 64-dimensional physical embedding $\mathbf{t}$. The concatenated vector $\mathbf{f} = [\mathbf{v} \,\|\, \mathbf{t}] \in \mathbb{R}^{128}$ is transformed through a fusion MLP into a joint representation $\mathbf{z}_{\text{fused}} \in \mathbb{R}^{64}$ for simultaneous wind regression and category classification.</p>
+
+        <h3 class="ieee-subsec">F. Multi-Task Optimization Objective</h3>
+        <p>All architectures are trained under a composite multi-task objective:</p>
+        <div class="equation">
+          $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{SmoothL1}}(\hat{y}_{\text{wind}}, y_{\text{wind}}) + \lambda \mathcal{L}_{\text{CE}}(\hat{\mathbf{y}}_{\text{class}}, y_{\text{class}})$$
+        </div>
+        <p class="no-indent">where $\lambda = 0.3$. Smooth L1 loss provides resilience against extreme intensity outliers, while Cross-Entropy loss penalizes categorical misclassifications across IMD operational warning boundaries.</p>
+
+        <div class="figure-box">
+          <img src="/paper-files/figures/training_curves.png" alt="Training Curves" onerror="this.src='figures/training_curves.png'">
+          <div class="caption">
+            <span class="fig-lbl">Fig. 4.</span> Training loss convergence and validation RMSE curves for the Tabular MLP with physical pressure (top) versus the ablation without pressure (bottom).
+          </div>
+        </div>
+
+        <h2 class="ieee-sec">V. Experimental Results and Discussion</h2>
+        <h3 class="ieee-subsec">A. Quantitative Performance Comparison</h3>
+        <p>Table I compiles the experimental results across all evaluated architectures on both the validation set (2020&ndash;2022) and the unseen test holdout set (2023&ndash;2026). Fig. 5 visualizes the comparative test errors.</p>
+
+        <div class="table-caption">TABLE I<br>Model Performance Comparison on Validation and Test Holdout Cyclones</div>
+        <table class="ieee-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Model Architecture</th>
+              <th>Val RMSE (kt)</th>
+              <th>Test RMSE (kt)</th>
+              <th>Test MAE (kt)</th>
+              <th>Test $R^2$</th>
+              <th>Test Bias</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align:left;"><strong>Tabular MLP [Physical]</strong></td>
+              <td><strong>2.859</strong></td>
+              <td><strong>3.360</strong></td>
+              <td><strong>2.642</strong></td>
+              <td><strong>0.855</strong></td>
+              <td>+1.54 kt</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;">Tabular MLP [No Pres]</td>
+              <td>15.113</td>
+              <td>18.740</td>
+              <td>12.150</td>
+              <td>-0.079</td>
+              <td>+10.50 kt</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;">Custom Cyclone CNN</td>
+              <td>7.120</td>
+              <td>8.420</td>
+              <td>6.780</td>
+              <td>0.760</td>
+              <td>-0.42 kt</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;">Modified AlexNet</td>
+              <td>6.950</td>
+              <td>8.110</td>
+              <td>6.450</td>
+              <td>0.775</td>
+              <td>-0.31 kt</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;"><strong>Multimodal EffNet [Phys]</strong></td>
+              <td>3.333</td>
+              <td>4.105</td>
+              <td>3.366</td>
+              <td>0.783</td>
+              <td>+1.08 kt</td>
+            </tr>
+            <tr class="last-row">
+              <td style="text-align:left;">Multimodal EffNet [No Pres]</td>
+              <td>9.933</td>
+              <td>8.493</td>
+              <td>6.586</td>
+              <td>0.072</td>
+              <td>+4.34 kt</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="figure-box">
+          <img src="/paper-files/figures/performance_comparison.png" alt="Performance Comparison" onerror="this.src='figures/performance_comparison.png'">
+          <div class="caption">
+            <span class="fig-lbl">Fig. 5.</span> Comparative test performance metrics (RMSE, MAE, and $R^2$) across evaluated architectures on the 2023&ndash;2026 unseen holdout benchmark.
+          </div>
+        </div>
+
+        <p>The Physics-Informed Tabular MLP achieves the highest overall accuracy, attaining a validation RMSE of 2.859 kt and a test RMSE of 3.360 kt ($R^2 = 0.855$). Multimodal EfficientNet-B0 [Physical] delivers strong competitive results with an RMSE of 4.105 kt ($R^2 = 0.783$). The vision-only baselines (Custom CNN and Modified AlexNet) achieve test RMSEs of 8.42 kt and 8.11 kt respectively, operating purely from satellite pixels without barometric sensor readings.</p>
+
+        <h3 class="ieee-subsec">B. Ablation Analysis: Holland's Law Verification</h3>
+        <p>A critical finding emerges from the feature ablation of central pressure: omitting $P_c$ causes Tabular MLP test RMSE to surge from 3.36 kt to 18.74 kt (a 457% error surge), while $R^2$ collapses from 0.855 to $-0.079$. In contrast, when pressure is removed from the Multimodal network, error increases only to 8.493 kt, proving that visual convolutional representations capture structural proxies for vortex strength (eyewall diameter and convective cloud banding) when in-situ pressure observations are missing.</p>
+
+        <div class="table-caption">TABLE II<br>Model Predictions at Peak Intensity on Unseen Test Storms</div>
+        <table class="ieee-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Cyclone</th>
+              <th>Date</th>
+              <th>Pres</th>
+              <th>Actual</th>
+              <th>Pred</th>
+              <th>Error</th>
+              <th>Class</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align:left;">BIPARJOY</td>
+              <td>Jun 2023</td>
+              <td>948 hPa</td>
+              <td>90 kt</td>
+              <td>88.4 kt</td>
+              <td>-1.6 kt</td>
+              <td>ESCS</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;">MOCHA</td>
+              <td>May 2023</td>
+              <td>938 hPa</td>
+              <td>115 kt</td>
+              <td>112.1 kt</td>
+              <td>-2.9 kt</td>
+              <td>ESCS</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;">MICHAUNG</td>
+              <td>Dec 2023</td>
+              <td>980 hPa</td>
+              <td>55 kt</td>
+              <td>56.2 kt</td>
+              <td>+1.2 kt</td>
+              <td>SCS</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;">REMAL</td>
+              <td>May 2024</td>
+              <td>978 hPa</td>
+              <td>60 kt</td>
+              <td>58.7 kt</td>
+              <td>-1.3 kt</td>
+              <td>SCS</td>
+            </tr>
+            <tr class="last-row">
+              <td style="text-align:left;">DANA</td>
+              <td>Oct 2024</td>
+              <td>984 hPa</td>
+              <td>60 kt</td>
+              <td>57.9 kt</td>
+              <td>-2.1 kt</td>
+              <td>SCS</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 class="ieee-subsec">C. Inference Latency</h3>
+        <p>Forward inference requires an average of 1.8 ms for the Tabular MLP and 14.2 ms for the Multimodal CNN pipeline on CPU, fully satisfying real-time early warning demands.</p>
+
+        <h2 class="ieee-sec">VI. Real-Time Operational Deployment</h2>
+        <p>The deep learning pipeline is operationalized within the ``Cyclone Eye'' interactive platform, featuring a containerized FastAPI backend and Leaflet GIS frontend. The system projects dynamic cones of uncertainty (&plusmn;45 km at +6h to &plusmn;140 km at +24h) and provides on-the-fly multi-task simulation for coastal disaster authorities.</p>
+
+        <h2 class="ieee-sec">VII. Conclusion and Future Scope</h2>
+        <p>This work demonstrated an automated, vision-based and multimodal deep learning framework for tropical cyclone intensity estimation and classification in the North Indian Ocean. Utilizing 44 years of NOAA IBTrACS historical tracks alongside INSAT-3D multi-spectral radiometer imagery, we demonstrated that uniting convolutional visual representations with physical barometric gradient constraints yields an exceptional test RMSE of 3.36 kt ($R^2 = 0.855$) on unseen 2023&ndash;2026 cyclones. Ablation experiments corroborated the Holland pressure vortex law within neural representations while showing visual embeddings maintain resilience against missing sensor data.</p>
+        
+        <p>Future extensions will incorporate hyperspectral infrared sounder products from ISRO's recently launched INSAT-3DS satellite, assimilate coastal Doppler Weather Radar (DWR) reflectivity volumes, and integrate physics-informed graph neural networks (GNNs) for enhanced spatiotemporal wind field modeling.</p>
+
+        <h2 class="ieee-sec">References</h2>
+        <ol class="references">
+          <li>R. Pradhan, R. S. Ayg&uuml;n, M. Maskey, R. Ramachandran, and D. J. Cecil, &ldquo;Tropical cyclone intensity estimation using a deep convolutional neural network,&rdquo; <em>IEEE Trans. Image Process.</em>, vol. 27, no. 2, pp. 692&ndash;702, 2018.</li>
+          <li>B. Pan, X. Xu, and Z. Shi, &ldquo;Tropical cyclone intensity prediction based on recurrent neural networks,&rdquo; <em>Electron. Lett.</em>, vol. 55, no. 7, pp. 413&ndash;415, 2019.</li>
+          <li>B.-F. Chen, B. Chen, H.-T. Lin, and R. L. Elsberry, &ldquo;Estimating tropical cyclone intensity by satellite imagery utilizing convolutional neural networks,&rdquo; <em>Weather Forecast.</em>, vol. 34, no. 2, pp. 447&ndash;465, 2019.</li>
+          <li>H. N. Dharpure et al., &ldquo;Deep learning-based cyclone intensity estimation using INSAT-3D IR imagery: A comparative study,&rdquo; <em>Int. J. Res. Publ. Rev.</em>, vol. 4, no. 5, pp. 1240&ndash;1247, 2023.</li>
+          <li>J. Lee, J. Im, D.-H. Cha, H. Park, and S. Sim, &ldquo;Tropical cyclone intensity estimation using multi-dimensional convolutional neural networks from geostationary satellite data,&rdquo; <em>Remote Sens.</em>, vol. 12, no. 1, p. 108, 2020.</li>
+          <li>M. Maskey et al., &ldquo;Deepti: Deep-learning-based tropical cyclone intensity estimation system,&rdquo; <em>IEEE J. Sel. Top. Appl. Earth Obs. Remote Sens.</em>, vol. 13, pp. 4271&ndash;4281, 2020.</li>
+          <li>S. Yuan, M. Cai, Y. Tan, M. Zhou, and H. Dong, &ldquo;A neural network framework for fine-grained tropical cyclone intensity prediction,&rdquo; <em>Knowl.-Based Syst.</em>, vol. 258, p. 110005, 2022.</li>
+          <li>J.-Y. Zhuo and Z.-M. Tan, &ldquo;Physics-augmented deep learning to improve tropical cyclone intensity and size estimation from satellite imagery,&rdquo; <em>Mon. Weather Rev.</em>, vol. 149, no. 7, pp. 2097&ndash;2113, 2021.</li>
+          <li>Z. Zhang, X. Yang, X. Wang, B. Wang, C. Wang, and Z. Du, &ldquo;A neural network with spatiotemporal encoding module for tropical cyclone intensity estimation from infrared satellite image,&rdquo; <em>Knowl.-Based Syst.</em>, vol. 258, p. 110005, 2022.</li>
+          <li>R. Fu, H. Hu, N. Wu, Z. Liu, and W. Jin, &ldquo;Spatiotemporal fusion convolutional neural network: Tropical cyclone intensity estimation from multisource remote sensing images,&rdquo; <em>J. Appl. Remote Sens.</em>, vol. 18, no. 1, p. 018501, 2024.</li>
+          <li>A. Suresh and T. Vijayakumar, &ldquo;Cyclone intensity estimation using INSAT-3D IR imagery based on deep learning,&rdquo; <em>Int. J. Creat. Res. Thoughts</em>, vol. 12, no. 3, pp. 450&ndash;458, 2024.</li>
+          <li>N. V. Uma Reddy, J. Vinod, K. M. Komal, and J. James, &ldquo;Deep learning based cyclone intensity estimation using INSAT-3D IR imagery,&rdquo; in <em>Proc. IEEE IATMSI</em>, 2024, pp. 1&ndash;6.</li>
+          <li>M. S. Manju et al., &ldquo;ConvLSTM-based tropical cyclone intensity estimation and classification using satellite imagery over the North Indian Ocean,&rdquo; <em>PLOS ONE</em>, vol. 20, no. 12, p. e0330705, 2025.</li>
+          <li>W. Yang, J. Fei, X. Huang, J. Ding, and X. Cheng, &ldquo;Enhancing tropical cyclone intensity estimation from satellite imagery through deep learning techniques,&rdquo; <em>J. Meteorol. Res.</em>, vol. 38, no. 4, pp. 652&ndash;663, 2024.</li>
+          <li>H. Jung, Y.-H. Baek, I.-J. Moon, J. Lee, and E.-H. Sohn, &ldquo;Tropical cyclone intensity estimation through convolutional neural network transfer learning using two geostationary satellite datasets,&rdquo; <em>Front. Earth Sci.</em>, vol. 11, p. 1285138, 2024.</li>
+          <li>A. Wimmers, C. Velden, and J. H. Cossuth, &ldquo;Using deep learning to estimate tropical cyclone intensity from satellite passive microwave imagery,&rdquo; <em>Mon. Weather Rev.</em>, vol. 147, no. 6, pp. 2261&ndash;2282, 2019.</li>
+          <li>W. Xu et al., &ldquo;Deep learning experiments for tropical cyclone intensity forecasts,&rdquo; <em>Weather Forecast.</em>, vol. 36, no. 4, pp. 1453&ndash;1470, 2021.</li>
+          <li>G. J. Holland, &ldquo;An analytical model of the wind and pressure profiles in hurricanes,&rdquo; <em>Mon. Weather Rev.</em>, vol. 108, no. 8, pp. 1212&ndash;1218, 1980.</li>
+          <li>K. R. Knapp, M. C. Kruk, D. H. Levinson, H. J. Diamond, and C. J. Neumann, &ldquo;The International Best Track Archive for Climate Stewardship (IBTrACS),&rdquo; <em>Bull. Amer. Meteor. Soc.</em>, vol. 91, no. 3, pp. 363&ndash;376, 2010.</li>
+          <li>India Meteorological Department (IMD), &ldquo;Best track data of tropical cyclones over the North Indian Ocean,&rdquo; <em>RSMC New Delhi Tech. Rep.</em>, Ministry of Earth Sciences, Govt. of India, 2024.</li>
+        </ol>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>
+

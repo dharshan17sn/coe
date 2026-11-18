@@ -50,15 +50,18 @@ REPORTS_CSV = os.path.join(BASE_DIR, "reports", "master_model_comparison.csv")
 IMAGES_DIR = os.path.join(BASE_DIR, "datasets", "processed", "images")
 RAW_IMAGES_DIR = os.path.join(BASE_DIR, "datasets", "raw", "insat3d")
 STATIC_DIR = os.path.join(BASE_DIR, "src", "static")
+PAPER_DIR = os.path.join(BASE_DIR, "paper")
 
 # Mount Static directories
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 os.makedirs(RAW_IMAGES_DIR, exist_ok=True)
+os.makedirs(PAPER_DIR, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/images/processed", StaticFiles(directory=IMAGES_DIR), name="processed_images")
 app.mount("/images/raw", StaticFiles(directory=RAW_IMAGES_DIR), name="raw_images")
+app.mount("/paper-files", StaticFiles(directory=PAPER_DIR), name="paper_files")
 
 # Load trained Tabular Model
 TABULAR_MODEL_PATH = os.path.join(BASE_DIR, "models", "tabular_mlp_[physical].pt")
@@ -544,6 +547,25 @@ def run_custom_prediction(req: PredictionRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/paper", response_class=HTMLResponse)
+def get_paper_preview():
+    """Serves the interactive 6-page IEEE conference paper preview."""
+    preview_path = os.path.join(PAPER_DIR, "preview.html")
+    if os.path.exists(preview_path):
+        with open(preview_path, "r", encoding="utf-8") as f:
+            return f.read()
+    raise HTTPException(status_code=404, detail="Paper preview not found.")
+
+
+@app.get("/paper/source")
+def get_paper_latex():
+    """Downloads the official LaTeX source file (main.tex)."""
+    tex_path = os.path.join(PAPER_DIR, "main.tex")
+    if os.path.exists(tex_path):
+        return FileResponse(tex_path, media_type="text/x-tex", filename="cyclone_paper_ieee.tex")
+    raise HTTPException(status_code=404, detail="LaTeX source file not found.")
 
 
 @app.get("/", response_class=HTMLResponse)

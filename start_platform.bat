@@ -7,10 +7,10 @@ echo.
 echo Activating Python virtual environment...
 call .\.venv\Scripts\activate.bat
 echo.
-echo Starting FastAPI Backend Server on http://127.0.0.1:8000 ...
+echo Starting FastAPI Backend Server on http://127.0.0.1:8001 ...
 echo Opening interactive dashboard in your browser...
-start "" "http://127.0.0.1:8000"
+start "" "http://127.0.0.1:8001"
 echo.
-python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8001 --reload
 pause
 
