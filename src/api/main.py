@@ -25,6 +25,7 @@ import torch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from src.models import TabularMLP, CustomCycloneCNN, ModifiedAlexNet
 from src.data.live_cyclone_tracker import LiveCycloneTracker
+from src.services.alert_dispatcher import AlertDispatcher
 from scripts.test_vision_inference import predict_from_image
 
 app = FastAPI(
@@ -81,6 +82,7 @@ if os.path.exists(TABULAR_MODEL_PATH):
 
 # Live Cyclone Tracker instance & caching
 live_tracker = LiveCycloneTracker(tabular_model=tabular_model, checkpoint=tabular_checkpoint)
+alert_dispatcher = AlertDispatcher()
 _cached_live_data = None
 _cached_live_time = None
 
@@ -527,6 +529,79 @@ def get_alerts():
         }
         alerts.insert(0, active_alert)
     return {"active_alerts_count": len(alerts), "alerts": alerts}
+
+
+class ContactRequest(BaseModel):
+    phone: str
+    name: str
+    region: str
+    district: str = ""
+    role: str = "Resident"
+
+
+class AlertDispatchRequest(BaseModel):
+    alert_level: str = "RED"
+    storm_name: str = "AKVAN (05B)"
+    wind_kt: float = 65.0
+    regions: Optional[List[str]] = None
+    target_numbers: Optional[List[str]] = None
+    custom_message: Optional[str] = None
+    telegram_token: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
+    callmebot_key: Optional[str] = None
+
+
+@app.get("/api/alerts/contacts")
+def list_alert_contacts():
+    """Returns configured coastal emergency contacts."""
+    return {"contacts_count": len(alert_dispatcher.get_contacts()), "contacts": alert_dispatcher.get_contacts()}
+
+
+@app.post("/api/alerts/contacts")
+def add_alert_contact(req: ContactRequest):
+    """Registers a new mobile number for coastal cyclone alerts."""
+    c = alert_dispatcher.add_contact(phone=req.phone, name=req.name, region=req.region, district=req.district, role=req.role)
+    return {"status": "SUCCESS", "contact": c}
+
+
+@app.delete("/api/alerts/contacts/{phone}")
+def delete_alert_contact(phone: str):
+    """Removes a registered phone number."""
+    ok = alert_dispatcher.remove_contact(phone)
+    return {"status": "SUCCESS" if ok else "NOT_FOUND"}
+
+
+@app.post("/api/alerts/dispatch")
+def dispatch_emergency_alert(req: AlertDispatchRequest):
+    """Dispatches emergency alerts to coastal numbers via Free SMS Gateway and optional Telegram/WhatsApp."""
+    res = alert_dispatcher.dispatch_alert(
+        alert_level=req.alert_level,
+        storm_name=req.storm_name,
+        wind_kt=req.wind_kt,
+        regions=req.regions,
+        target_numbers=req.target_numbers,
+        custom_message=req.custom_message,
+        telegram_token=req.telegram_token,
+        telegram_chat_id=req.telegram_chat_id,
+        callmebot_key=req.callmebot_key,
+    )
+    return res
+
+
+@app.get("/api/alerts/history")
+def get_alert_dispatch_history():
+    """Returns chronological audit log of all sent emergency SMS/push messages."""
+    return {"count": len(alert_dispatcher.dispatch_history), "history": list(reversed(alert_dispatcher.dispatch_history[-50:]))}
+
+
+@app.post("/api/alerts/auto-check")
+def auto_check_intensity_trigger():
+    """Automatically evaluates forecast intensity and triggers alerts if crossing Red/Orange thresholds."""
+    live_data = get_live_tracker_data()
+    res = alert_dispatcher.check_intensity_increase_and_trigger(live_data)
+    if res:
+        return {"status": "TRIGGERED", "details": res}
+    return {"status": "NO_TRIGGER_NEEDED", "message": "Intensity forecast within safe watch limits."}
 
 
 @app.post("/api/live/refresh")

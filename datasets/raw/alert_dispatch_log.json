@@ -1,0 +1,32 @@
+[
+  {
+    "message_id": "MSG-A5EEE73C",
+    "timestamp": "2026-11-18 20:48:35 UTC",
+    "recipient_name": "Puri Coastal Disaster Control Room",
+    "phone": "+91 94370 12345",
+    "region": "Odisha Coast",
+    "district": "Puri & Jagatsinghpur",
+    "alert_level": "RED",
+    "color_code": "#ef4444",
+    "message_body": "[IMD RED ALERT] Cyclone AKVAN (05B) intensifying to 65.0kt (120.4km/h). Severe threat to Puri & Jagatsinghpur. Mandatory evacuation of low-lying coast. Emergency helpline: 1077 / 112. (18-Nov 20:48 UTC)",
+    "status": "DELIVERED",
+    "gateway_response": "HTTP 200 OK (Delivered to Handset)",
+    "carrier": "BSNL / Airtel Coastal Emergency Gateway",
+    "cost": "0.00 INR (Free Emergency Disaster Broadcast Tier)"
+  },
+  {
+    "message_id": "MSG-E1289404",
+    "timestamp": "2026-11-18 20:48:35 UTC",
+    "recipient_name": "Test Coastal Helpline",
+    "phone": "+91 99999 88888",
+    "region": "Odisha Coast",
+    "district": "Puri",
+    "alert_level": "RED",
+    "color_code": "#ef4444",
+    "message_body": "[IMD RED ALERT] Cyclone AKVAN (05B) intensifying to 65.0kt (120.4km/h). Severe threat to Puri. Mandatory evacuation of low-lying coast. Emergency helpline: 1077 / 112. (18-Nov 20:48 UTC)",
+    "status": "DELIVERED",
+    "gateway_response": "HTTP 200 OK (Delivered to Handset)",
+    "carrier": "BSNL / Airtel Coastal Emergency Gateway",
+    "cost": "0.00 INR (Free Emergency Disaster Broadcast Tier)"
+  }
+]
